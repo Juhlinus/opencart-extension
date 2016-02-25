@@ -6,6 +6,6 @@
 	color: gray;
 }
 
-#personal-button:hover,#corporate-button:hover {
+#personal:hover,#corporate:hover {
 	cursor: pointer;
 }
