@@ -1,0 +1,11 @@
+/* Misc */
+.hidden-fade {
+	background: #E2E2E2!important;
+}
+.hidden-fade > h4 {
+	color: gray;
+}
+
+#personal-button:hover,#corporate-button:hover {
+	cursor: pointer;
+}
