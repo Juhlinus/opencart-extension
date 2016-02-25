@@ -1,0 +1,16 @@
+.htaccess.txt
+config.php
+crossdomain.xml
+index.php
+php.ini
+admin/*
+image/*
+system/*
+catalog/controller/*
+!catalog/controller/kassa/
+catalog/language/english/*
+!catalog/language/english/kassa/
+catalog/model/*
+!catalog/model/kassa/
+catalog/view/theme/default/template/*
+!catalog/view/theme/default/template/kassa/
