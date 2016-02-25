@@ -139,7 +139,7 @@ $(document).ready(function() {
             }
         });
     });
-
+    /* HÄMTA SENARE 
     $.ajax({
             url: 'index.php?route=kassa/betalnings_metod',
             dataType: 'html',
@@ -153,9 +153,11 @@ $(document).ready(function() {
                 alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
             }
         });
+        */
 });
 
 $(document).delegate('#button-payment-method', 'click', function() {
+    /*
     $.ajax({
         url: 'index.php?route=kassa/confirm',
         dataType: 'html',
@@ -164,13 +166,56 @@ $(document).delegate('#button-payment-method', 'click', function() {
         },
         success: function(html) {
             alert(html);
-            /*
+            
             $('#collapse-checkout-confirm .panel-body').html(html);
 
             $('#collapse-checkout-confirm').parent().find('.panel-heading .panel-title').html('<a href="#collapse-checkout-confirm" data-toggle="collapse" data-parent="#accordion" class="accordion-toggle"><?php echo $text_checkout_confirm; ?> <i class="fa fa-caret-down"></i></a>');
 
             $('a[href=\'#collapse-checkout-confirm\']').trigger('click');
-            */
+            
+        },
+        error: function(xhr, ajaxOptions, thrownError) {
+            alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+        }
+    });
+    */
+    $.ajax({
+        url: 'index.php?route=kassa/betalnings_metod/save',
+        type: 'post',
+        //data: $('#collapse-payment-method input[type=\'radio\']:checked, #collapse-payment-method input[type=\'checkbox\']:checked, #collapse-payment-method textarea'),
+        data: $('input[name=\'address_1\'], input[type=\'checkbox\']:checked, input[type=\'radio\']:checked'),
+        dataType: 'json',
+        beforeSend: function() {
+            $('#button-payment-method').button('loading');
+        },
+        success: function(json) {
+            $('.alert, .text-danger').remove();
+            if (json['redirect']) {
+                location = json['redirect'];
+            } else if (json['error']) {
+                if (json['error']['warning']) {
+                    $('body').prepend('<div class="alert alert-warning">' + json['error']['warning'] + '<button type="button" class="close" data-dismiss="alert">&times;</button></div>');
+                }
+            } else {
+                $.ajax({
+                    url: 'index.php?route=kassa/confirm',
+                    dataType: 'html',
+                    complete: function() {
+                        $('#button-payment-method').button('reset');
+                    },
+                    success: function(html) {
+                        //$('#collapse-checkout-confirm .panel-body').html(html);
+
+                        //$('#collapse-checkout-confirm').parent().find('.panel-heading .panel-title').html('<a href="#collapse-checkout-confirm" data-toggle="collapse" data-parent="#accordion" class="accordion-toggle"><?php echo $text_checkout_confirm; ?> <i class="fa fa-caret-down"></i></a>');
+
+                        //$('a[href=\'#collapse-checkout-confirm\']').trigger('click');
+                    },
+                    error: function(xhr, ajaxOptions, thrownError) {
+                        console.log('error!');
+                        alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+                    }
+                });
+            }
         },
         error: function(xhr, ajaxOptions, thrownError) {
             alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);

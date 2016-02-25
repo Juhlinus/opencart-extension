@@ -31,7 +31,7 @@ class ControllerKassaBetalningsInformation extends Controller {
 		$this->load->model('account/address');
 
 		$data['addresses'] = $this->model_account_address->getAddresses();
-
+		
 		if (isset($this->session->data['payment_address']['country_id'])) {
 			$data['country_id'] = $this->session->data['payment_address']['country_id'];
 		} else {
@@ -43,7 +43,7 @@ class ControllerKassaBetalningsInformation extends Controller {
 		} else {
 			$data['zone_id'] = '';
 		}
-
+		
 		$this->load->model('localisation/country');
 
 		$data['countries'] = $this->model_localisation_country->getCountries();

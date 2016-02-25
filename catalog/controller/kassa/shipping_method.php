@@ -36,6 +36,11 @@ class ControllerKassaShippingMethod extends Controller {
 
 			array_multisort($sort_order, SORT_ASC, $method_data);
 
+			echo '<pre>';
+			print_r($method_data);
+			echo '</pre>';
+			exit;
+
 			$this->session->data['shipping_methods'] = $method_data;
 		}
 
