@@ -10,6 +10,12 @@ class ControllerKassaKassa extends Controller
 
 		$this->load->language('checkout/checkout');
 
+		$data['column_name'] = $this->language->get('column_name');
+		$data['column_model'] = $this->language->get('column_model');
+		$data['column_quantity'] = $this->language->get('column_quantity');
+		$data['column_price'] = $this->language->get('column_price');
+		$data['column_total'] = $this->language->get('column_total');
+
 		$data['text_address_existing'] = $this->language->get('text_address_existing');
 		$data['text_address_new'] = $this->language->get('text_address_new');
 		$data['text_select'] = $this->language->get('text_select');
@@ -221,6 +227,49 @@ class ControllerKassaKassa extends Controller
 
 		$data['products'] = $products;
 
+		$order_data['totals'] = array();
+		$total = 0;
+		$taxes = $this->cart->getTaxes();
+
+		$this->load->model('extension/extension');
+
+		$sort_order = array();
+
+		$results = $this->model_extension_extension->getExtensions('total');
+
+		foreach ($results as $key => $value)
+			$sort_order[$key] = $this->config->get($value['code'] . '_sort_order');
+
+		array_multisort($sort_order, SORT_ASC, $results);
+
+		$this->session->data['shipping_method'] = $data['shipping_methods']['weight']['quote']['weight_5'];
+
+		foreach ($results as $result) {
+			if ($this->config->get($result['code'] . '_status')) {
+				$this->load->model('total/' . $result['code']);
+
+				$this->{'model_total_' . $result['code']}->getTotal($order_data['totals'], $total, $taxes);
+			}
+		}
+
+
+
+		$sort_order = array();
+
+		foreach ($order_data['totals'] as $key => $value)
+			$sort_order[$key] = $value['sort_order'];
+
+		array_multisort($sort_order, SORT_ASC, $order_data['totals']);
+
+		$data['totals'] = array();
+
+		foreach ($order_data['totals'] as $total) {
+			$data['totals'][] = array(
+				'title' => $total['title'],
+				'text'  => $this->currency->format($total['value']),
+			);
+		}
+
 		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/kassa/kassa.tpl')) {
 			$this->response->setOutput($this->load->view($this->config->get('config_template') . '/template/kassa/kassa.tpl', $data));
 		} else {
@@ -237,8 +286,6 @@ class ControllerKassaKassa extends Controller
 			if (!isset($this->request->post['address_1']))
 				$redirect = $this->url->link('kassa/kassa', '', 'SSL');
 		}
-
-		//print_r($this->request->post);
 
 		if (!$redirect)
 		{
@@ -276,6 +323,11 @@ class ControllerKassaKassa extends Controller
 
 			$this->load->language('checkout/checkout');
 
+			// Country Localization
+			$this->load->model('localisation/country');
+
+			$country_info = $this->model_localisation_country->getCountry($this->request->post['country_id']);
+
 			$order_data['invoice_prefix'] = $this->config->get('config_invoice_prefix');
 			$order_data['store_id'] = $this->config->get('config_store_id');
 			$order_data['store_name'] = $this->config->get('config_name');
@@ -287,6 +339,7 @@ class ControllerKassaKassa extends Controller
 
 			$shipping_method = explode(',', $this->request->post['shipping_methods'][0]);
 
+			// Order data
 			$order_data['customer_id'] = 0;
 			$order_data['customer_group_id'] = 0;
 
@@ -306,17 +359,12 @@ class ControllerKassaKassa extends Controller
 			$order_data['payment_postcode'] = $this->request->post['postcode'];
 			$order_data['payment_zone'] = $this->request->post['zone'];
 			$order_data['payment_zone_id'] = $this->request->post['zone_id'];
-			$order_data['payment_country'] = ($this->request->post['country'] = 'Sweden');
+			$order_data['payment_country'] = $country_info['name'];
 			$order_data['payment_country_id'] = $this->request->post['country_id'];
 			$order_data['payment_method'] = $this->request->post['payment_method'];
 			$order_data['payment_code'] = $this->request->post['payment_method'];
 			// Fix this
-			$order_data['payment_address_format'] = nl2br('{company}
-			{firstname} {lastname}
-			{address_1}
-			{address_2}
-			{postcode} {city}
-			{country}');
+			$order_data['payment_address_format'] = $country_info['address_format'];
 
 			$order_data['shipping_firstname'] = $this->request->post['firstname'];
 			$order_data['shipping_lastname'] = $this->request->post['lastname'];
@@ -327,13 +375,15 @@ class ControllerKassaKassa extends Controller
 			$order_data['shipping_postcode'] = $this->request->post['postcode'];
 			$order_data['shipping_zone'] = $this->request->post['zone'];
 			$order_data['shipping_zone_id'] = $this->request->post['zone_id'];
-			$order_data['shipping_country'] = ($this->request->post['country'] = 'Sweden');
+			$order_data['shipping_country'] = $country_info['name'];
 			$order_data['shipping_country_id'] = $this->request->post['country_id'];
 
 			$order_data['shipping_code'] = $shipping_method[0];
 			$order_data['shipping_method'] = $shipping_method[1];
 
-			$order_data['shipping_address_format'] = '';
+			$order_data['shipping_address_format'] = $country_info['address_format'];;
+
+			$order_data['iso_code_2'] = $country_info['iso_code_2'];
 
 			$order_data['comment'] = '';
 			$order_data['affiliate_id'] = '';
@@ -509,22 +559,33 @@ class ControllerKassaKassa extends Controller
 
 			$data['totals'] = array();
 
-			// Här
+			// Här // Fixa till så att allting visas vid utcheckning
 			foreach ($order_data['totals'] as $total) {
 				$data['totals'][] = array(
 					'title' => $total['title'],
 					'text'  => $this->currency->format($total['value']),
 					);
 			}
+
 			$data['payment'] = $this->load->controller('payment/' . $order_data['payment_code']);
 		}
 		else
 			$data['redirect'] = $redirect;
 
-		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/checkout/confirm.tpl')) {
-			$this->response->setOutput($this->load->view($this->config->get('config_template') . '/template/checkout/confirm.tpl', $data));
+		$data['misc'] = $order_data;
+
+		$data['column_left'] = $this->load->controller('common/column_left');
+		$data['column_right'] = $this->load->controller('common/column_right');
+		$data['content_top'] = $this->load->controller('common/content_top');
+		$data['content_bottom'] = $this->load->controller('common/content_bottom');
+		$data['footer'] = $this->load->controller('common/footer');
+		$data['header'] = $this->load->controller('common/header');
+		$data['heading_title'] = $this->language->get('heading_title');
+
+		if (file_exists(DIR_TEMPLATE . $this->config->get('config_template') . '/template/kassa/confirm.tpl')) {
+			$this->response->setOutput($this->load->view($this->config->get('config_template') . '/template/kassa/confirm.tpl', $data));
 		} else {
-			$this->response->setOutput($this->load->view('default/template/checkout/confirm.tpl', $data));
+			$this->response->setOutput($this->load->view('default/template/kassa/confirm.tpl', $data));
 		}
 	}
 }

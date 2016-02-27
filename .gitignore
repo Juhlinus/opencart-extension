@@ -3,6 +3,8 @@ config.php
 crossdomain.xml
 index.php
 php.ini
+svea/*
+vqmod/*
 admin/*
 image/*
 system/*
